@@ -1,0 +1,15 @@
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    restart: always
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5001"
+    restart: always
+    env_file:
+      - ./backend/.env
