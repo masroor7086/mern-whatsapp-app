@@ -1,8 +1,8 @@
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_BACKEND_URL;
+
 export const axiosInstance = axios.create({
-  baseURL: import.meta.env.MODE === "development"
-    ? "http://localhost:5001/api"       // dev mode: use backend directly
-    : "http://localhost:5001/api",      // production: use backend on host machine
+  baseURL,
   withCredentials: true,
 });
