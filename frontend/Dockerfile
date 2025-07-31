@@ -10,12 +10,10 @@ COPY . .
 
 # Accept build-time env vars for Vite
 ARG VITE_BACKEND_URL
-
-# Vite will pick up any variable that starts with VITE_
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
-# Build your frontend
-RUN npm run build
+# Build the app with the correct env var available
+RUN VITE_BACKEND_URL=$VITE_BACKEND_URL npm run build
 
 # Stage 2: Serve with NGINX
 FROM nginx:alpine
