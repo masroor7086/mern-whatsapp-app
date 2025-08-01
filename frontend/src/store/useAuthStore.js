@@ -1,7 +1,11 @@
+import { create } from "zustand"; // ✅ Make sure this import exists
+import { axiosInstance } from "../lib/axios"; // ✅ Your axios instance (should have baseURL and headers)
+import { toast } from "react-hot-toast";
+
 export const useAuthStore = create((set) => ({
   authUser: null,
   isLoggingIn: false,
-  isCheckingAuth: true, // 👈 added
+  isCheckingAuth: true, // ✅ show loader until auth is verified
 
   login: async ({ email, password }) => {
     set({ isLoggingIn: true });
@@ -9,7 +13,7 @@ export const useAuthStore = create((set) => ({
       const res = await axiosInstance.post("/auth/login", { email, password });
       const { token, user } = res.data;
 
-      localStorage.setItem("token", token);
+      localStorage.setItem("token", token); // ✅ save token
       set({ authUser: user, isLoggingIn: false });
     } catch (error) {
       toast.error(error?.response?.data?.message || "Login failed");
@@ -31,5 +35,5 @@ export const useAuthStore = create((set) => ({
       localStorage.removeItem("token");
       set({ authUser: null, isCheckingAuth: false });
     }
-  },
+  }
 }));
