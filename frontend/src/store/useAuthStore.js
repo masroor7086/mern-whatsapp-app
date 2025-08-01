@@ -7,6 +7,18 @@ const BASE_URL = import.meta.env.MODE === "development"
   ? "http://localhost:5001"
   : window.location.origin;
 
+// 🔒 Automatically attach Authorization header to each request
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isSigningUp: false,
