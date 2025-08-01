@@ -1,3 +1,5 @@
+// frontend/src/store/useAuthStore.js
+
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "react-hot-toast";
@@ -5,7 +7,7 @@ import { toast } from "react-hot-toast";
 export const useAuthStore = create((set) => ({
   authUser: null,
   isLoggingIn: false,
-  isCheckingAuth: true, // ✅ Added for splash loader
+  isCheckingAuth: true,
 
   login: async ({ email, password }) => {
     set({ isLoggingIn: true });
