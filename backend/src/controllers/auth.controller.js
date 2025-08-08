@@ -28,7 +28,10 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      generateToken(newUser._id, res, process.env.NODE_ENV === "production");
+      generateToken(newUser._id, res, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+      });
       await newUser.save();
 
       res.status(201).json({
@@ -60,7 +63,10 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    generateToken(user._id, res, process.env.NODE_ENV === "production");
+    generateToken(user._id, res, {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    });
 
     res.status(200).json({
       _id: user._id,
@@ -78,6 +84,7 @@ export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { 
       maxAge: 0,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     });
@@ -87,6 +94,8 @@ export const logout = (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// Rest of the file remains unchanged...
 
 export const updateProfile = async (req, res) => {
   try {
