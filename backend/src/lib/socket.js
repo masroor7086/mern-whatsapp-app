@@ -13,14 +13,15 @@ const io = new Server(server, {
   },
   // Critical stability settings
   connectionStateRecovery: {
-    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
   },
   transports: ["websocket", "polling"],
-  allowEIO3: true, // For v2/v3 compatibility
+  allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000,
-  cookie: false
+  cookie: false,
+  maxHttpBufferSize: 1e8 // 100MB max payload
 });
 
 // User socket mapping
@@ -33,15 +34,21 @@ io.on("connection", (socket) => {
 
   const userId = socket.handshake.query.userId;
   if (userId) {
+    // Disconnect previous connection if same user connects again
+    if (userSocketMap[userId]) {
+      io.sockets.sockets.get(userSocketMap[userId])?.disconnect();
+    }
     userSocketMap[userId] = socket.id;
-    console.log(`User ${userId} connected`);
   }
 
+  // Broadcast online users
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
     console.log("Disconnected:", socket.id);
-    if (userId) delete userSocketMap[userId];
+    if (userId && userSocketMap[userId] === socket.id) {
+      delete userSocketMap[userId];
+    }
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 
