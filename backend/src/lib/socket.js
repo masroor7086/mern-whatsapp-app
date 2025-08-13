@@ -9,79 +9,69 @@ const server = http.createServer(app);
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const PORT = process.env.PORT || 5001;
 
-// Socket.IO Server Configuration
-const io = new Server(server, {
-  cors: {
-    origin: FRONTEND_URL,
-    methods: ["GET", "POST"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
-  },
-  transports: ['websocket', 'polling'],
-  allowUpgrades: true,
-  perMessageDeflate: {
-    threshold: 1024,
-    zlibDeflateOptions: {
-      chunkSize: 16 * 1024,
+// Initialize only once
+if (!global.socketServerInitialized) {
+  // Socket.IO Server Configuration
+  const io = new Server(server, {
+    cors: {
+      origin: FRONTEND_URL,
+      methods: ["GET", "POST"],
+      credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"]
     },
-    zlibInflateOptions: {
-      windowBits: 15,
-      memLevel: 8,
-    },
-  },
-  pingInterval: 25000,
-  pingTimeout: 20000,
-  cookie: false
-});
+    transports: ['websocket', 'polling'],
+    allowUpgrades: true,
+    perMessageDeflate: false
+  });
 
-// User socket mapping
-const userSocketMap = {};
+  // User socket mapping
+  const userSocketMap = {};
 
-// Utility function
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
-}
-
-// Connection handler
-io.on("connection", (socket) => {
-  console.log(`New connection: ${socket.id}`);
-  
-  const userId = socket.handshake.query.userId;
-  if (userId) {
-    userSocketMap[userId] = socket.id;
-    console.log(`User ${userId} connected with socket ${socket.id}`);
+  // Utility function
+  export function getReceiverSocketId(userId) {
+    return userSocketMap[userId];
   }
 
-  // Broadcast online users
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
-
-  // Disconnection handler
-  socket.on("disconnect", () => {
-    console.log(`Disconnected: ${socket.id}`);
+  // Connection handler
+  io.on("connection", (socket) => {
+    console.log(`New connection: ${socket.id}`);
+    
+    const userId = socket.handshake.query.userId;
     if (userId) {
-      delete userSocketMap[userId];
-      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+      userSocketMap[userId] = socket.id;
+      console.log(`User ${userId} connected with socket ${socket.id}`);
     }
+
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+    socket.on("disconnect", () => {
+      console.log(`Disconnected: ${socket.id}`);
+      if (userId) {
+        delete userSocketMap[userId];
+        io.emit("getOnlineUsers", Object.keys(userSocketMap));
+      }
+    });
+
+    socket.on("error", (err) => {
+      console.error(`Socket error (${socket.id}):`, err);
+    });
   });
 
-  // Error handler
-  socket.on("error", (err) => {
-    console.error(`Socket error (${socket.id}):`, err);
+  // Health check endpoint
+  app.get('/healthz', (req, res) => {
+    res.status(200).json({
+      status: 'healthy',
+      connections: Object.keys(userSocketMap).length
+    });
   });
-});
 
-// Health check endpoint
-app.get('/healthz', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    connections: Object.keys(userSocketMap).length
+  // Start server
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Socket.IO configured for origin: ${FRONTEND_URL}`);
   });
-});
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Socket.IO configured for origin: ${FRONTEND_URL}`);
-});
+  global.socketServerInitialized = true;
+}
 
 export { io, app, server };
