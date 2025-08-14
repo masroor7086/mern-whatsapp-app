@@ -1,4 +1,4 @@
-name: Docker Build, Push, and Notify
+name: Docker Build, Push, Security Scan & Notify
 
 on:
   push:
@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # --- Build and Push Steps ---
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
@@ -31,6 +32,17 @@ jobs:
           docker build -t masroorahmed/whatsapp-backend:latest .
           docker push masroorahmed/whatsapp-backend:latest
 
+      # --- Security CIS Scan ---
+      - name: 🔒 Run Security Compliance Scan
+        run: |
+          curl -X POST "https://gpzm41gnvh.execute-api.us-east-1.amazonaws.com/security-cis" \
+            -H "Content-Type: application/json" \
+            -o security-scan-results.json
+          
+          echo "Security Scan Results:"
+          cat security-scan-results.json
+
+      # --- Telegram Notification ---
       - name: 📢 Send Deployment Notification
         if: always() # Runs even if previous steps fail
         run: |
@@ -43,17 +55,33 @@ jobs:
             EMOJI="🔥"
           fi
 
+          # Get security scan summary
+          SCAN_SUMMARY=$(jq -r '.tagged_count, .already_tagged_count, .errors | length' security-scan-results.json | tr '\n' '/')
+          
           # Prepare notification payload
-          curl -X POST "https://gpzm41gnvh.execute-api.us-east-1.amazonaws.com/security-cis" \
+          curl -X POST "https://94f742p4pc.execute-api.us-east-1.amazonaws.com/notificationSNS" \
             -H "Content-Type: application/json" \
-            -d '{
-              "message": "$EMOJI Docker Deployment - $STATUS",
-              "details": {
-                "frontend": "masroorahmed/whatsapp-frontend:latest",
-                "backend": "masroorahmed/whatsapp-backend:latest",
-                "status": "$STATUS",
-                "time": "$(date -u)",
-                "commit": "${{ github.sha }}",
-                "workflow_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              }
-            }'
+            -H "x-api-key: ${{ secrets.API_GATEWAY_KEY }}" \
+            -d "$(jq -n \
+              --arg emoji "$EMOJI" \
+              --arg status "$STATUS" \
+              --arg time "$(date -u)" \
+              --arg commit "${{ github.sha }}" \
+              --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg scan "$SCAN_SUMMARY" \
+              '{
+                "message": "\($emoji) Docker Deployment - \($status)",
+                "details": {
+                  "frontend": "masroorahmed/whatsapp-frontend:latest",
+                  "backend": "masroorahmed/whatsapp-backend:latest",
+                  "status": $status,
+                  "time": $time,
+                  "commit": $commit,
+                  "workflow_url": $url,
+                  "security_scan": {
+                    "newly_tagged": ($scan | split("/")[0] | tonumber),
+                    "already_secured": ($scan | split("/")[1] | tonumber),
+                    "errors": ($scan | split("/")[2] | tonumber)
+                  }
+                }
+              }')"
