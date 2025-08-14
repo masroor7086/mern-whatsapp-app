@@ -2,8 +2,8 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ "main" ]  # ✅ Auto-trigger on any change in main branch
-  workflow_dispatch:        # ✅ Manual trigger from GitHub UI
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -30,3 +30,17 @@ jobs:
         run: |
           docker build -t masroorahmed/whatsapp-backend:latest .
           docker push masroorahmed/whatsapp-backend:latest
+          
+      - name: 🌐 Trigger Lambda API
+        run: |
+          # Simple GET request to your API Gateway endpoint
+          response=$(curl -s -X GET "https://gpzm41gnvh.execute-api.us-east-1.amazonaws.com/security-cis")
+          
+          # Print the response (for debugging)
+          echo "API Response: $response"
+          
+          # Optional: Fail the workflow if API call fails
+          if [[ -z "$response" ]]; then
+            echo "❌ API call failed!"
+            exit 1
+          fi
