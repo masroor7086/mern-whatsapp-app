@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // Temporary for debugging
+    origin: "*",
     credentials: true,
     methods: ["GET", "POST"]
   },
@@ -35,7 +35,9 @@ export { io, app, server };
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
 
-  const userId = socket.handshake.query.userId;
+  // ✅ Fixed: read from auth, not query
+  const userId = socket.handshake.auth?.userId;
+
   if (userId) {
     if (userSocketMap[userId]) {
       const prevSocket = io.sockets.sockets.get(userSocketMap[userId]);
