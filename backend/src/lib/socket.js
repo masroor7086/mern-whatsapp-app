@@ -2,18 +2,19 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 
+const app = express();
+const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: "*", // Temporary for debugging
     credentials: true,
     methods: ["GET", "POST"]
   },
-  // Critical settings:
   pingTimeout: 20000,
   pingInterval: 10000,
   transports: ["websocket", "polling"],
   allowEIO3: true,
-  // Keep your existing:
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
@@ -26,12 +27,10 @@ const io = new Server(server, {
   }
 });
 
-// Keep all your existing socket logic exactly the same
-
-// Rest of your existing socket logic remains exactly the same
 const userSocketMap = {};
 
 export const getReceiverSocketId = (userId) => userSocketMap[userId];
+export { io };
 
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
@@ -61,4 +60,3 @@ io.on("connection", (socket) => {
     console.error("Socket error:", err.message);
   });
 });
-
