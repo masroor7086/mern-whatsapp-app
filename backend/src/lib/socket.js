@@ -30,12 +30,13 @@ const io = new Server(server, {
 const userSocketMap = {};
 
 export const getReceiverSocketId = (userId) => userSocketMap[userId];
-export { io, app, server };
+export { io };
+export { app };
+export { server };
 
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
 
-  // ✅ Fixed: read from auth, not query
   const userId = socket.handshake.auth?.userId;
 
   if (userId) {
