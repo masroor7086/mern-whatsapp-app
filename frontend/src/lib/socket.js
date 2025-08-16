@@ -9,25 +9,23 @@ const socket = io({
   timeout: 20000,
   withCredentials: true,
   autoConnect: false,
-  // Critical change:
-  forceNew: true, // Ensures fresh connection each time
-  upgrade: false  // Force WebSocket only
+  forceNew: true,
+  upgrade: false
 });
 
 export const connectSocket = (userId, token) => {
   socket.auth = { userId, token };
-  
-  socket.off('connect_error'); // Clean old listeners
-  
+
+  socket.off('connect_error');
+
   socket.on('connect_error', (err) => {
     console.error('Connection error:', err.message);
-    // Fallback to polling if WebSocket fails
     if (err.message.includes('websocket')) {
       socket.io.opts.transports = ['polling', 'websocket'];
       socket.connect();
     }
   });
-  
+
   socket.connect();
 };
 
