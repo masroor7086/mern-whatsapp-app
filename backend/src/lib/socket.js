@@ -11,17 +11,26 @@ const io = new Server(server, {
     credentials: true,
     methods: ["GET", "POST"]
   },
-  // Critical stability settings
+  // Connection recovery settings
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
   },
+  // Transport settings
   transports: ["websocket", "polling"],
   allowEIO3: true,
-  pingTimeout: 60000,
-  pingInterval: 25000,
+  // Timeout settings
+  pingTimeout: 30000,  // Reduced from 60s to 30s
+  pingInterval: 15000, // Reduced from 25s to 15s
+  // Security settings
   cookie: false,
-  maxHttpBufferSize: 1e8 // 100MB max payload
+  maxHttpBufferSize: 1e7, // Reduced from 100MB to 10MB
+  // Performance settings
+  serveClient: false,
+  allowRequest: (req, callback) => {
+    // Add any auth checks here if needed
+    callback(null, true);
+  }
 });
 
 // User socket mapping
@@ -36,7 +45,10 @@ io.on("connection", (socket) => {
   if (userId) {
     // Disconnect previous connection if same user connects again
     if (userSocketMap[userId]) {
-      io.sockets.sockets.get(userSocketMap[userId])?.disconnect();
+      const prevSocket = io.sockets.sockets.get(userSocketMap[userId]);
+      if (prevSocket) {
+        prevSocket.disconnect(true); // Force disconnect
+      }
     }
     userSocketMap[userId] = socket.id;
   }
@@ -44,8 +56,8 @@ io.on("connection", (socket) => {
   // Broadcast online users
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  socket.on("disconnect", () => {
-    console.log("Disconnected:", socket.id);
+  socket.on("disconnect", (reason) => {
+    console.log(`Disconnected: ${socket.id} (Reason: ${reason})`);
     if (userId && userSocketMap[userId] === socket.id) {
       delete userSocketMap[userId];
     }
@@ -53,7 +65,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("error", (err) => {
-    console.error("Socket error:", err);
+    console.error("Socket error:", err.message);
   });
 });
 
