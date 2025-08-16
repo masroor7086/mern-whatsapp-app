@@ -60,4 +60,5 @@ io.on("connection", (socket) => {
   socket.on("error", (err) => {
     console.error("Socket error:", err.message);
   });
+});
 
