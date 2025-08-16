@@ -7,27 +7,29 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins temporarily for testing
+    origin: "*", // Temporary open CORS for testing
     credentials: true,
     methods: ["GET", "POST"]
   },
-  // Connection settings
+  transports: ["websocket", "polling"],
+  // Optimized timeouts
+  pingTimeout: 20000,  // 20 seconds
+  pingInterval: 10000, // 10 seconds
+  // Keep your existing settings
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
   },
-  transports: ["websocket", "polling"],
-  // Timeout settings (optimized)
-  pingTimeout: 20000,  // 20s
-  pingInterval: 10000, // 10s
-  // Security
+  allowEIO3: true,
   cookie: false,
-  maxHttpBufferSize: 1e6, // 1MB
-  // Performance
+  maxHttpBufferSize: 1e7,
   serveClient: false,
-  allowEIO3: true
+  allowRequest: (req, callback) => {
+    callback(null, true);
+  }
 });
 
+// Rest of your existing socket logic remains exactly the same
 const userSocketMap = {};
 
 export const getReceiverSocketId = (userId) => userSocketMap[userId];
@@ -39,7 +41,9 @@ io.on("connection", (socket) => {
   if (userId) {
     if (userSocketMap[userId]) {
       const prevSocket = io.sockets.sockets.get(userSocketMap[userId]);
-      prevSocket?.disconnect(true);
+      if (prevSocket) {
+        prevSocket.disconnect(true);
+      }
     }
     userSocketMap[userId] = socket.id;
   }
