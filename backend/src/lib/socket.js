@@ -30,7 +30,7 @@ const io = new Server(server, {
 const userSocketMap = {};
 
 export const getReceiverSocketId = (userId) => userSocketMap[userId];
-export { io };
+export { io, app, server };
 
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
