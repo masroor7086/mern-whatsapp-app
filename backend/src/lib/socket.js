@@ -2,25 +2,22 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 
-const app = express();
-const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
-    origin: "*", // Temporary open CORS for testing
+    origin: "*", // Temporary for debugging
     credentials: true,
     methods: ["GET", "POST"]
   },
+  // Critical settings:
+  pingTimeout: 20000,
+  pingInterval: 10000,
   transports: ["websocket", "polling"],
-  // Optimized timeouts
-  pingTimeout: 20000,  // 20 seconds
-  pingInterval: 10000, // 10 seconds
-  // Keep your existing settings
+  allowEIO3: true,
+  // Keep your existing:
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
   },
-  allowEIO3: true,
   cookie: false,
   maxHttpBufferSize: 1e7,
   serveClient: false,
@@ -28,6 +25,8 @@ const io = new Server(server, {
     callback(null, true);
   }
 });
+
+// Keep all your existing socket logic exactly the same
 
 // Rest of your existing socket logic remains exactly the same
 const userSocketMap = {};
