@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 
 // ✅ Explicitly set base URL `/`
 const socket = io("/", {
-  path: "/socket.io/",
+  path: "/socket.io",
   transports: ["websocket", "polling"],
   reconnection: true,
   reconnectionAttempts: 5,
