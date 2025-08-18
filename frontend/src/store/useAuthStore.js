@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
- import { connectSocket } from "../frontend/socket.js"; // ✅ correct relative path
+ import { connectSocket } from "../lib/socket.js"; // ✅ correct relative path
   // ✅ use singleton socket
 
 export const useAuthStore = create((set, get) => ({
