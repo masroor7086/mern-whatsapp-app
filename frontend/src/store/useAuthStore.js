@@ -82,12 +82,11 @@ export const useAuthStore = create((set, get) => ({
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;
 
-    const socket = io({
+    // ✅ FIXED: use auth instead of query
+    const socket = io("/", {
       path: "/socket.io",
       withCredentials: true,
-      query: {
-        userId: authUser._id,
-      },
+      auth: { userId: authUser._id },
     });
 
     set({ socket });
