@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
-import { io } from "socket.io-client";
+import socket, { connectSocket } from "../socket.js";  // ✅ use singleton socket
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -80,23 +80,21 @@ export const useAuthStore = create((set, get) => ({
 
   connectSocket: () => {
     const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    if (!authUser) return;
 
-    // ✅ FIXED: use auth instead of query
-    const socket = io("/", {
-      path: "/socket.io",
-      withCredentials: true,
-      auth: { userId: authUser._id },
-    });
+    // ✅ Use shared socket
+    connectSocket(authUser._id);
 
     set({ socket });
 
+    socket.off("getOnlineUsers"); // avoid duplicate listeners
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
   },
 
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    if (socket.connected) socket.disconnect();
+    set({ socket: null, onlineUsers: [] });
   },
 }));
