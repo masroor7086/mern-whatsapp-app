@@ -16,7 +16,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get("/auth/check");
       set({ authUser: res?.data || null });
-      if (res?.data?._id) connectSocket(res.data._id);
+      if (res?.data?._id) connectSocket(res.data._id, (users) => set({ onlineUsers: users }));
     } catch (error) {
       console.error("Error in checkAuth:", error);
       set({ authUser: null });
@@ -31,7 +31,7 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/signup", data);
       set({ authUser: res?.data || null });
       toast.success("Account created successfully");
-      if (res?.data?._id) connectSocket(res.data._id);
+      if (res?.data?._id) connectSocket(res.data._id, (users) => set({ onlineUsers: users }));
     } catch (error) {
       toast.error(error.response?.data?.message || "Signup failed");
     } finally {
@@ -45,7 +45,7 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res?.data || null });
       toast.success("Logged in successfully");
-      if (res?.data?._id) connectSocket(res.data._id);
+      if (res?.data?._id) connectSocket(res.data._id, (users) => set({ onlineUsers: users }));
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error.response?.data?.message || "Login failed");
@@ -57,7 +57,7 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
-      set({ authUser: null });
+      set({ authUser: null, onlineUsers: [] });
       toast.success("Logged out successfully");
       if (socket?.connected) socket.disconnect();
     } catch (error) {
