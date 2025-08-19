@@ -1,11 +1,11 @@
 import { io } from "socket.io-client";
 
-// ✅ Single socket instance, relative path
+// Single socket instance
 const socket = io("/", {
-  path: "/socket.io",       // must match backend + nginx
+  path: "/socket.io",
   transports: ["websocket", "polling"],
   withCredentials: true,
-  autoConnect: false,       // manually controlled
+  autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
@@ -13,8 +13,8 @@ const socket = io("/", {
   forceNew: true,
 });
 
-// ✅ Connect socket with authUser ID
-export const connectSocket = (userId) => {
+// Connect socket with authUser ID
+export const connectSocket = (userId, setOnlineUsers) => {
   if (!userId) return;
 
   socket.auth = { userId };
@@ -22,11 +22,16 @@ export const connectSocket = (userId) => {
   socket.off("connect_error");
   socket.on("connect_error", (err) => {
     console.error("Socket connect_error:", err.message);
-    // fallback to polling if websocket fails
     if (err.message.includes("websocket")) {
       socket.io.opts.transports = ["polling", "websocket"];
       socket.connect();
     }
+  });
+
+  // ✅ Listen for online users updates
+  socket.off("getOnlineUsers");
+  socket.on("getOnlineUsers", (userIds) => {
+    setOnlineUsers(userIds);
   });
 
   socket.connect();
