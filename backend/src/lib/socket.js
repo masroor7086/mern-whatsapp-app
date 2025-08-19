@@ -6,25 +6,16 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
+  path: "/socket.io",       // ✅ must match frontend + nginx
   cors: {
-    origin: "*",
+    origin: true,           // ✅ reflect request origin
     credentials: true,
     methods: ["GET", "POST"]
   },
+  transports: ["websocket", "polling"],
   pingTimeout: 20000,
   pingInterval: 10000,
-  transports: ["websocket", "polling"],
-  allowEIO3: true,
-  connectionStateRecovery: {
-    maxDisconnectionDuration: 2 * 60 * 1000,
-    skipMiddlewares: true
-  },
-  cookie: false,
-  maxHttpBufferSize: 1e7,
   serveClient: false,
-  allowRequest: (req, callback) => {
-    callback(null, true);
-  }
 });
 
 const userSocketMap = {};
@@ -42,9 +33,7 @@ io.on("connection", (socket) => {
   if (userId) {
     if (userSocketMap[userId]) {
       const prevSocket = io.sockets.sockets.get(userSocketMap[userId]);
-      if (prevSocket) {
-        prevSocket.disconnect(true);
-      }
+      if (prevSocket) prevSocket.disconnect(true);
     }
     userSocketMap[userId] = socket.id;
   }
