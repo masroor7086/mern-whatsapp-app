@@ -1,11 +1,11 @@
 import { io } from "socket.io-client";
 
-// ✅ Create single socket instance (singleton)
+// ✅ Single socket instance, relative path
 const socket = io("/", {
   path: "/socket.io",       // must match backend + nginx
   transports: ["websocket", "polling"],
   withCredentials: true,
-  autoConnect: false,       // controlled manually
+  autoConnect: false,       // manually controlled
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
@@ -13,11 +13,13 @@ const socket = io("/", {
   forceNew: true,
 });
 
-// ✅ Function to connect socket with auth
+// ✅ Connect socket with authUser ID
 export const connectSocket = (userId) => {
+  if (!userId) return;
+
   socket.auth = { userId };
 
-  socket.off("connect_error"); // clear old handlers
+  socket.off("connect_error");
   socket.on("connect_error", (err) => {
     console.error("Socket connect_error:", err.message);
     // fallback to polling if websocket fails
